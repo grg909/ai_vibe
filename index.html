@@ -131,7 +131,6 @@
             box-shadow: 0 0 15px rgba(20, 241, 149, 0.5), 0 0 15px rgba(153, 69, 255, 0.5);
             transform: scale(1.03);
         }
-        /* FIXED: Improved disabled state for the button */
         .btn-solana:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -323,11 +322,12 @@
             DOM.sourceText.disabled = false;
         }
 
-        async function callApiProxy(task, requestBody) {
+        async function callApiProxy(task, requestBody, signal) {
             const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ task, requestBody }),
+                signal, // Pass the abort signal to the fetch request
             });
             const data = await response.json();
             if (!response.ok) {
@@ -347,6 +347,12 @@
             DOM.translateBtn.disabled = true;
             detectedSourceLang = '';
 
+            // **FIXED**: Implement client-side timeout to handle long-running requests gracefully
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 9500); // 9.5 seconds, just under the Vercel 10s limit
+
             try {
                 let data;
                 if (uploadedImage) {
@@ -357,7 +363,7 @@
 **Rule 4:** You are forbidden from describing the image content under any circumstances.
 Execute now.`;
 
-                    data = await callApiProxy('TRANSLATION', { prompt, image: uploadedImage });
+                    data = await callApiProxy('TRANSLATION', { prompt, image: uploadedImage }, controller.signal);
                     DOM.targetText.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || `未能翻译成 ${targetLang}`;
                     if (DOM.sourceLang.value === 'auto') DOM.sourceLang.value = 'auto';
                 } else {
@@ -372,7 +378,7 @@ Execute now.`;
                             responseSchema: { type: "OBJECT", properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }}, required: ["detectedLanguage", "translatedText"] }
                         } : { temperature: 0.3, maxOutputTokens: 2048 }
                     };
-                    data = await callApiProxy('TRANSLATION', requestBody);
+                    data = await callApiProxy('TRANSLATION', requestBody, controller.signal);
                     if (isAutoDetect) {
                         const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
                         try {
@@ -389,9 +395,14 @@ Execute now.`;
                     }
                 }
             } catch (error) {
-                console.error('翻译错误:', error);
-                DOM.targetText.innerText = `翻译时发生错误: ${error.message}`;
+                if (error.name === 'AbortError') {
+                    DOM.targetText.innerText = `翻译请求超时，请稍后重试或使用更简单的图片。`;
+                } else {
+                    console.error('翻译错误:', error);
+                    DOM.targetText.innerText = `翻译时发生错误: ${error.message}`;
+                }
             } finally {
+                clearTimeout(timeoutId); // Always clear the timeout
                 DOM.loadingIndicator.classList.add('hidden');
                 DOM.translateBtn.disabled = false;
                 updateTargetCharCount();
