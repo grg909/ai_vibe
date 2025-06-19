@@ -131,8 +131,12 @@
             box-shadow: 0 0 15px rgba(20, 241, 149, 0.5), 0 0 15px rgba(153, 69, 255, 0.5);
             transform: scale(1.03);
         }
+        /* FIXED: Improved disabled state for the button */
         .btn-solana:disabled {
-            background: #334155; cursor: not-allowed; transform: none; box-shadow: none;
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
     </style>
 </head>
@@ -454,7 +458,6 @@ Execute now.`;
             }
         }
 
-        // NEW: Paste image functionality
         function handlePaste(e) {
             const items = e.clipboardData.items;
             for (let i = 0; i < items.length; i++) {
@@ -494,7 +497,6 @@ Execute now.`;
             handleFile(file);
         }, false);
 
-        // Paste Listener
         window.addEventListener('paste', handlePaste);
 
     </script>
