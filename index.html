@@ -17,7 +17,6 @@
             --particle-color: #14F195;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --border-color: rgba(255, 255, 255, 0.1);
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -61,7 +60,6 @@
             animation: gradient-flow 8s ease infinite;
             z-index: -1;
         }
-        /* NEW: Style for drag-over state */
         .gradient-border-card.drag-over {
             box-shadow: 0 0 25px var(--particle-color);
         }
@@ -89,7 +87,6 @@
         textarea::placeholder {
             color: #64748b;
         }
-        /* NEW: Styles for image preview */
         #imagePreviewContainer {
             position: relative;
             max-height: 280px;
@@ -107,7 +104,6 @@
             border-radius: 50%;
             color: white;
         }
-
         .lang-select {
             background-color: transparent; border: none; font-weight: 600; color: #e2e8f0;
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
@@ -143,7 +139,6 @@
 <body class="text-slate-300">
 
     <canvas id="particle-canvas"></canvas>
-    <!-- NEW: Hidden file input -->
     <input type="file" id="imageUploadInput" class="hidden" accept="image/*">
 
     <div class="main-container p-4 md:p-8">
@@ -163,10 +158,12 @@
                                 <option value="English">English</option>
                                 <option value="Chinese">Chinese</option>
                                 <option value="Japanese">Japanese</option>
-                                <!-- More languages -->
+                                <option value="Spanish">Spanish</option>
+                                <option value="French">French</option>
+                                <option value="German">German</option>
+                                <option value="Korean">Korean</option>
                             </select>
                         </div>
-                        <!-- NEW: Image Preview Area -->
                         <div id="imagePreviewContainer" class="p-4 flex-grow flex justify-center items-center hidden">
                             <img id="imagePreview" src="" alt="Image preview">
                             <button id="removeImageBtn" class="icon-btn" title="Remove image">
@@ -178,13 +175,8 @@
                         </div>
                         <div class="p-3 border-t border-slate-800 flex justify-between items-center">
                             <div class="flex items-center space-x-2">
-                                <button id="speakSource" class="icon-btn" title="收听">
-                                    <span class="material-symbols-outlined">volume_up</span>
-                                </button>
-                                <!-- NEW: Upload Image Button -->
-                                <button id="uploadImageBtn" class="icon-btn" title="上传图片">
-                                    <span class="material-symbols-outlined">add_photo_alternate</span>
-                                </button>
+                                <button id="speakSource" class="icon-btn" title="收听"><span class="material-symbols-outlined">volume_up</span></button>
+                                <button id="uploadImageBtn" class="icon-btn" title="上传图片"><span class="material-symbols-outlined">add_photo_alternate</span></button>
                             </div>
                             <span id="sourceCharCount" class="text-sm text-slate-500">0 / 5000</span>
                         </div>
@@ -199,7 +191,10 @@
                                 <option value="Chinese">Chinese</option>
                                 <option value="English">English</option>
                                 <option value="Japanese">Japanese</option>
-                                <!-- More languages -->
+                                <option value="Spanish">Spanish</option>
+                                <option value="French">French</option>
+                                <option value="German">German</option>
+                                <option value="Korean">Korean</option>
                             </select>
                             <div id="loadingIndicator" class="hidden"><div class="loading-spinner"></div></div>
                         </div>
@@ -243,7 +238,7 @@
         function animateParticles() { ctx.clearRect(0, 0, canvas.width, canvas.height); particlesArray.forEach(p => { p.update(); p.draw(); }); connectParticles(); requestAnimationFrame(animateParticles); }
         window.addEventListener('resize', initParticles); initParticles(); animateParticles();
 
-        // --- Translator Logic (Refactored for Image Translation) ---
+        // --- Translator Logic ---
 
         const API_ENDPOINT = '/api/translate';
 
@@ -260,7 +255,6 @@
         const copyTargetBtn = document.getElementById('copyTarget');
         const copyFeedback = document.getElementById('copyFeedback');
 
-        // NEW: Image-related elements
         const sourceCard = document.getElementById('sourceCard');
         const uploadImageBtn = document.getElementById('uploadImageBtn');
         const imageUploadInput = document.getElementById('imageUploadInput');
@@ -271,9 +265,7 @@
 
         let detectedSourceLang = '';
         let currentAudioPlayer = null;
-        let uploadedImage = null; // NEW: To store image data
-
-        // --- NEW: Image Handling Functions ---
+        let uploadedImage = null;
 
         function handleFile(file) {
             if (!file || !file.type.startsWith('image/')) {
@@ -285,15 +277,9 @@
             reader.onload = (e) => {
                 const dataUrl = e.target.result;
                 imagePreview.src = dataUrl;
-
-                // Store base64 data and mime type separately
                 const base64String = dataUrl.split(',')[1];
-                uploadedImage = {
-                    mimeType: file.type,
-                    data: base64String
-                };
+                uploadedImage = { mimeType: file.type, data: base64String };
 
-                // Update UI
                 imagePreviewContainer.classList.remove('hidden');
                 sourceTextContainer.classList.add('hidden');
                 sourceTextarea.disabled = true;
@@ -306,15 +292,12 @@
         function removeImage() {
             uploadedImage = null;
             imagePreview.src = '';
-            imageUploadInput.value = ''; // Reset file input
+            imageUploadInput.value = '';
 
-            // Update UI
             imagePreviewContainer.classList.add('hidden');
             sourceTextContainer.classList.remove('hidden');
             sourceTextarea.disabled = false;
         }
-
-        // --- API Call and Translation Logic ---
 
         async function callApiProxy(task, requestBody) {
             const response = await fetch(API_ENDPOINT, {
@@ -342,57 +325,43 @@
 
             let requestBody;
             const isAutoDetect = sourceLangSelect.value === 'auto';
-            let prompt;
-
-            if (uploadedImage) {
-                // Image translation prompt
-                prompt = `Extract text from the following image and translate it to "${targetLang}".`;
-                if (isAutoDetect) {
-                     prompt += ` First, also identify the source language. Respond in a JSON format with "detectedLanguage" and "translatedText" keys.`;
-                }
-                requestBody = {
-                    prompt: prompt,
-                    image: uploadedImage,
-                    generationConfig: isAutoDetect ? {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }},
-                            required: ["detectedLanguage", "translatedText"]
-                        }
-                    } : {}
-                };
-            } else {
-                // Text translation prompt
-                prompt = isAutoDetect
-                    ? `First detect the language of the following text, then translate it into "${targetLang}". Provide the output as a clean JSON object with "detectedLanguage" and "translatedText" keys.\n\nText:\n---\n${sourceText}`
-                    : `Translate the following text to "${targetLang}". Respond only with the translated text.\n\nText:\n---\n${sourceText}`;
-                requestBody = {
-                    prompt: prompt,
-                    generationConfig: isAutoDetect ? {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                             type: "OBJECT",
-                            properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }},
-                            required: ["detectedLanguage", "translatedText"]
-                        }
-                    } : {
-                        temperature: 0.3, maxOutputTokens: 2048,
-                    }
-                };
-            }
 
             try {
-                const data = await callApiProxy('TRANSLATION', requestBody);
+                if (uploadedImage) {
+                    // **FIXED**: Using a much stricter prompt for image translation.
+                    const prompt = `You are a strict OCR and translation tool. Your sole task is to extract any text from the provided image and translate it to "${targetLang}". VERY IMPORTANT: Your response MUST contain ONLY the translated text. Do not include any explanations, introductions, or any words other than the translation itself. If no text is found in the image, you must return a completely empty response.`;
+                    requestBody = { prompt, image: uploadedImage };
 
-                if (isAutoDetect) {
-                    const resultJson = JSON.parse(data.candidates[0].content.parts[0].text);
-                    targetDiv.innerText = resultJson.translatedText;
-                    detectedSourceLang = resultJson.detectedLanguage;
-                    const option = Array.from(sourceLangSelect.options).find(o => o.value === detectedSourceLang);
-                    if (option) sourceLangSelect.value = detectedSourceLang;
+                    const data = await callApiProxy('TRANSLATION', requestBody);
+                    targetDiv.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; // Return empty string if no text
+                    if(isAutoDetect) sourceLangSelect.value = 'auto';
+
                 } else {
-                    targetDiv.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No translation found.";
+                    const prompt = isAutoDetect
+                        ? `First detect the language of the following text, then translate it into "${targetLang}". Provide the output as a clean JSON object with "detectedLanguage" and "translatedText" keys.\n\nText:\n---\n${sourceText}`
+                        : `Translate the following text to "${targetLang}". Respond only with the translated text.\n\nText:\n---\n${sourceText}`;
+                    requestBody = {
+                        prompt,
+                        generationConfig: isAutoDetect ? {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }},
+                                required: ["detectedLanguage", "translatedText"]
+                            }
+                        } : { temperature: 0.3, maxOutputTokens: 2048 }
+                    };
+
+                    const data = await callApiProxy('TRANSLATION', requestBody);
+                    if (isAutoDetect) {
+                        const resultJson = JSON.parse(data.candidates[0].content.parts[0].text);
+                        targetDiv.innerText = resultJson.translatedText;
+                        detectedSourceLang = resultJson.detectedLanguage;
+                        const option = Array.from(sourceLangSelect.options).find(o => o.value === detectedSourceLang);
+                        if (option) sourceLangSelect.value = detectedSourceLang;
+                    } else {
+                        targetDiv.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No translation found.";
+                    }
                 }
             } catch (error) {
                 console.error('翻译错误:', error);
@@ -412,7 +381,7 @@
                 buttonElement.classList.remove('speaking');
                 return;
             }
-            const requestBody = { text: text, languageCode: lang };
+            const requestBody = { text, languageCode: lang };
             const originalIcon = buttonElement.innerHTML;
             buttonElement.innerHTML = '<div class="loading-spinner"></div>';
             buttonElement.disabled = true;
@@ -437,14 +406,13 @@
             }
         }
 
-        // --- Helper Functions and Event Listeners ---
         function getLanguageCodeForTTS(langName) {
             const langMap = { 'English': 'en-US', 'Chinese': 'cmn-CN', 'Japanese': 'ja-JP', 'Spanish': 'es-ES', 'French': 'fr-FR', 'German': 'de-DE', 'Korean': 'ko-KR' };
             return langMap[langName] || 'en-US';
         }
         async function handleSourceSpeak() {
             const text = sourceTextarea.value.trim();
-            if (!text) return; // Cannot speak image
+            if (!text) return;
             const langName = detectedSourceLang || sourceLangSelect.value;
             if (langName === 'auto') { alert('请先进行一次翻译来自动检测语言。'); return; }
             speakText(text, getLanguageCodeForTTS(langName), speakSourceBtn);
@@ -466,34 +434,24 @@
             }
         }
 
-        // --- Event Listeners Setup ---
         translateBtn.addEventListener('click', performTranslation);
         sourceTextarea.addEventListener('input', updateSourceCharCount);
         speakSourceBtn.addEventListener('click', handleSourceSpeak);
         speakTargetBtn.addEventListener('click', handleTargetSpeak);
         copyTargetBtn.addEventListener('click', copyTranslatedText);
 
-        // NEW: Image-related event listeners
         uploadImageBtn.addEventListener('click', () => imageUploadInput.click());
         imageUploadInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
         removeImageBtn.addEventListener('click', removeImage);
 
-        // NEW: Drag and drop event listeners
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            sourceCard.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
+            sourceCard.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
         });
         ['dragenter', 'dragover'].forEach(eventName => {
-            sourceCard.addEventListener(eventName, () => {
-                sourceCard.classList.add('drag-over');
-            }, false);
+            sourceCard.addEventListener(eventName, () => sourceCard.classList.add('drag-over'), false);
         });
         ['dragleave', 'drop'].forEach(eventName => {
-            sourceCard.addEventListener(eventName, () => {
-                sourceCard.classList.remove('drag-over');
-            }, false);
+            sourceCard.addEventListener(eventName, () => sourceCard.classList.remove('drag-over'), false);
         });
         sourceCard.addEventListener('drop', (e) => {
             const file = e.dataTransfer.files[0];
