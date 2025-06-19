@@ -12,22 +12,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
-        /* Custom styles for the Fused "Nebula + Solana UI" theme */
         :root {
             --dark-bg: #000000;
-            --particle-color: #14F195; /* Solana Green for particles */
+            --particle-color: #14F195;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --border-color: rgba(255, 255, 255, 0.1);
         }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--dark-bg);
             color: var(--text-primary);
             overflow-x: hidden;
         }
-
         #particle-canvas {
             position: fixed;
             top: 0;
@@ -36,7 +33,6 @@
             height: 100vh;
             z-index: -1;
         }
-
         .main-container {
             max-width: 1100px;
             margin: 0 auto;
@@ -46,20 +42,15 @@
             flex-direction: column;
             min-height: 100vh;
         }
-
-        main {
-            flex-grow: 1;
-        }
-
         h1 {
             font-family: 'Playfair Display', serif;
         }
-
         .gradient-border-card {
             position: relative;
             padding: 1px;
             border-radius: 1rem;
             overflow: hidden;
+            transition: box-shadow 0.3s ease;
         }
         .gradient-border-card::before {
             content: "";
@@ -70,13 +61,13 @@
             animation: gradient-flow 8s ease infinite;
             z-index: -1;
         }
-
-        @keyframes gradient-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        /* NEW: Style for drag-over state */
+        .gradient-border-card.drag-over {
+            box-shadow: 0 0 25px var(--particle-color);
         }
-
+        @keyframes gradient-flow {
+            0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
+        }
         .translate-card {
             background-color: rgba(16, 16, 16, 0.8);
             backdrop-filter: blur(10px);
@@ -86,99 +77,85 @@
             flex-direction: column;
             height: 400px;
         }
-
         textarea {
-            resize: none; /* A good fallback, but the class is more specific */
+            resize: none;
             flex-grow: 1;
             background-color: transparent;
             color: var(--text-primary);
         }
+        textarea:disabled {
+            background-color: rgba(0,0,0,0.2);
+        }
         textarea::placeholder {
             color: #64748b;
         }
+        /* NEW: Styles for image preview */
+        #imagePreviewContainer {
+            position: relative;
+            max-height: 280px;
+        }
+        #imagePreview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #removeImageBtn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            color: white;
+        }
 
         .lang-select {
-            background-color: transparent;
-            border: none;
-            font-weight: 600;
-            color: #e2e8f0;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
+            background-color: transparent; border: none; font-weight: 600; color: #e2e8f0;
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
             padding-right: 1.5rem;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.25rem center;
-            background-size: 1.5em 1.5em;
+            background-repeat: no-repeat; background-position: right 0.25rem center; background-size: 1.5em 1.5em;
         }
-
         .icon-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            transition: background-color 0.2s;
-            color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 50%;
+            transition: background-color 0.2s; color: var(--text-secondary);
         }
-        .icon-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #f8fafc;
-        }
-        .icon-btn.speaking .material-symbols-outlined {
-            animation: pulse 1.5s infinite;
-            color: var(--particle-color);
-        }
-
+        .icon-btn:hover { background-color: rgba(255, 255, 255, 0.1); color: #f8fafc; }
+        .icon-btn.speaking .material-symbols-outlined { animation: pulse 1.5s infinite; color: var(--particle-color); }
         .loading-spinner {
-            border: 2px solid #334155;
-            border-top: 2px solid var(--particle-color);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+            border: 2px solid #334155; border-top: 2px solid var(--particle-color);
+            border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .btn-solana {
-            background: linear-gradient(135deg, #9945FF, #14F195);
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #9945FF, #14F195); transition: all 0.3s ease;
         }
         .btn-solana:hover {
             box-shadow: 0 0 15px rgba(20, 241, 149, 0.5), 0 0 15px rgba(153, 69, 255, 0.5);
             transform: scale(1.03);
         }
         .btn-solana:disabled {
-            background: #334155;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+            background: #334155; cursor: not-allowed; transform: none; box-shadow: none;
         }
     </style>
 </head>
 <body class="text-slate-300">
 
     <canvas id="particle-canvas"></canvas>
+    <!-- NEW: Hidden file input -->
+    <input type="file" id="imageUploadInput" class="hidden" accept="image/*">
 
     <div class="main-container p-4 md:p-8">
-        <main>
-            <header class="text-center my-12">
+        <main class="flex-grow flex flex-col justify-center">
+            <header class="text-center mb-12">
                 <h1 class="text-5xl md:text-6xl font-bold text-slate-50 tracking-tight">ALL IN AI Translator</h1>
                 <p id="subheading" class="text-slate-400 mt-4">Powered by Gemini</p>
             </header>
 
             <div class="grid grid-cols-1 md:grid-cols-2 md:gap-8 items-center">
                 <!-- Source Language Card -->
-                <div class="gradient-border-card mb-8 md:mb-0">
+                <div id="sourceCard" class="gradient-border-card mb-8 md:mb-0">
                     <div class="translate-card">
                         <div class="p-4 border-b border-slate-800">
                             <select id="sourceLang" class="lang-select focus:outline-none">
@@ -186,20 +163,29 @@
                                 <option value="English">English</option>
                                 <option value="Chinese">Chinese</option>
                                 <option value="Japanese">Japanese</option>
-                                <option value="Spanish">Spanish</option>
-                                <option value="French">French</option>
-                                <option value="German">German</option>
-                                <option value="Korean">Korean</option>
+                                <!-- More languages -->
                             </select>
                         </div>
-                        <div class="p-4 flex-grow flex overflow-hidden">
-                            <!-- THE FIX IS HERE: Added the "resize-none" class -->
-                            <textarea id="sourceText" class="w-full h-full focus:outline-none text-lg resize-none" placeholder="输入文本..."></textarea>
+                        <!-- NEW: Image Preview Area -->
+                        <div id="imagePreviewContainer" class="p-4 flex-grow flex justify-center items-center hidden">
+                            <img id="imagePreview" src="" alt="Image preview">
+                            <button id="removeImageBtn" class="icon-btn" title="Remove image">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div id="sourceTextContainer" class="p-4 flex-grow flex overflow-hidden">
+                            <textarea id="sourceText" class="w-full h-full focus:outline-none text-lg resize-none" placeholder="输入文本或拖入图片..."></textarea>
                         </div>
                         <div class="p-3 border-t border-slate-800 flex justify-between items-center">
-                            <button id="speakSource" class="icon-btn" title="收听">
-                                <span class="material-symbols-outlined">volume_up</span>
-                            </button>
+                            <div class="flex items-center space-x-2">
+                                <button id="speakSource" class="icon-btn" title="收听">
+                                    <span class="material-symbols-outlined">volume_up</span>
+                                </button>
+                                <!-- NEW: Upload Image Button -->
+                                <button id="uploadImageBtn" class="icon-btn" title="上传图片">
+                                    <span class="material-symbols-outlined">add_photo_alternate</span>
+                                </button>
+                            </div>
                             <span id="sourceCharCount" class="text-sm text-slate-500">0 / 5000</span>
                         </div>
                     </div>
@@ -213,27 +199,18 @@
                                 <option value="Chinese">Chinese</option>
                                 <option value="English">English</option>
                                 <option value="Japanese">Japanese</option>
-                                <option value="Spanish">Spanish</option>
-                                <option value="French">French</option>
-                                <option value="German">German</option>
-                                <option value="Korean">Korean</option>
+                                <!-- More languages -->
                             </select>
-                            <div id="loadingIndicator" class="hidden">
-                                <div class="loading-spinner"></div>
-                            </div>
+                            <div id="loadingIndicator" class="hidden"><div class="loading-spinner"></div></div>
                         </div>
                         <div class="p-4 flex-grow flex overflow-hidden">
                              <div id="targetText" class="w-full h-full text-lg text-slate-200 overflow-y-auto"></div>
                         </div>
                         <div class="p-3 border-t border-slate-800 flex justify-between items-center">
                             <div class="flex items-center space-x-2">
-                                <button id="speakTarget" class="icon-btn" title="收听">
-                                    <span class="material-symbols-outlined">volume_up</span>
-                                </button>
-                                <button id="copyTarget" class="icon-btn" title="复制">
-                                    <span class="material-symbols-outlined">content_copy</span>
-                                </button>
-                                 <span id="copyFeedback" class="text-sm text-green-400 font-semibold opacity-0 transition-opacity">已复制!</span>
+                                <button id="speakTarget" class="icon-btn" title="收听"><span class="material-symbols-outlined">volume_up</span></button>
+                                <button id="copyTarget" class="icon-btn" title="复制"><span class="material-symbols-outlined">content_copy</span></button>
+                                <span id="copyFeedback" class="text-sm text-green-400 font-semibold opacity-0 transition-opacity">已复制!</span>
                             </div>
                             <span id="targetCharCount" class="text-sm text-slate-500">0</span>
                         </div>
@@ -241,10 +218,8 @@
                 </div>
             </div>
 
-            <div class="text-center my-12">
-                <button id="translateBtn" class="btn-solana px-10 py-4 text-white font-bold rounded-full shadow-lg">
-                    翻译
-                </button>
+            <div class="text-center mt-12">
+                <button id="translateBtn" class="btn-solana px-10 py-4 text-white font-bold rounded-full shadow-lg">翻译</button>
             </div>
         </main>
 
@@ -257,76 +232,20 @@
     </div>
 
     <script type="module">
-        // --- Interactive Particle Nebula Background ---
+        // --- Particle Background (No changes) ---
         const canvas = document.getElementById('particle-canvas');
         const ctx = canvas.getContext('2d');
         let particlesArray = [];
-        const settings = {
-            particleCount: 100,
-            particleColor: 'hsl(160, 100%, 50%)',
-            maxDistance: 120,
-        };
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 1;
-                this.speedX = Math.random() * 1 - 0.5;
-                this.speedY = Math.random() * 1 - 0.5;
-            }
-            update() {
-                if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
-                if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
-                this.x += this.speedX;
-                this.y += this.speedY;
-            }
-            draw() {
-                ctx.fillStyle = settings.particleColor;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        function initParticles() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            particlesArray = [];
-            let numberOfParticles = (canvas.width * canvas.height) / 9000;
-            numberOfParticles = Math.min(numberOfParticles, settings.particleCount);
-            for (let i = 0; i < numberOfParticles; i++) {
-                particlesArray.push(new Particle());
-            }
-        }
-        function connectParticles() {
-            for (let a = 0; a < particlesArray.length; a++) {
-                for (let b = a; b < particlesArray.length; b++) {
-                    let dx = particlesArray[a].x - particlesArray[b].x;
-                    let dy = particlesArray[a].y - particlesArray[b].y;
-                    let distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < settings.maxDistance) {
-                        ctx.strokeStyle = `hsla(160, 100%, 50%, ${1 - distance / settings.maxDistance})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.beginPath();
-                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
-                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
-                        ctx.stroke();
-                    }
-                }
-            }
-        }
-        function animateParticles() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particlesArray.forEach(p => { p.update(); p.draw(); });
-            connectParticles();
-            requestAnimationFrame(animateParticles);
-        }
-        window.addEventListener('resize', initParticles);
-        initParticles();
-        animateParticles();
+        const settings = { particleCount: 100, particleColor: 'hsl(160, 100%, 50%)', maxDistance: 120 };
+        class Particle { constructor() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.size = Math.random() * 2 + 1; this.speedX = Math.random() * 1 - 0.5; this.speedY = Math.random() * 1 - 0.5; } update() { if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX; if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY; this.x += this.speedX; this.y += this.speedY; } draw() { ctx.fillStyle = settings.particleColor; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); } }
+        function initParticles() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; particlesArray = []; let num = Math.min((canvas.width * canvas.height) / 9000, settings.particleCount); for (let i = 0; i < num; i++) { particlesArray.push(new Particle()); } }
+        function connectParticles() { for (let a = 0; a < particlesArray.length; a++) { for (let b = a; b < particlesArray.length; b++) { let dist = Math.sqrt(Math.pow(particlesArray[a].x - particlesArray[b].x, 2) + Math.pow(particlesArray[a].y - particlesArray[b].y, 2)); if (dist < settings.maxDistance) { ctx.strokeStyle = `hsla(160, 100%, 50%, ${1 - dist / settings.maxDistance})`; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(particlesArray[a].x, particlesArray[a].y); ctx.lineTo(particlesArray[b].x, particlesArray[b].y); ctx.stroke(); } } } }
+        function animateParticles() { ctx.clearRect(0, 0, canvas.width, canvas.height); particlesArray.forEach(p => { p.update(); p.draw(); }); connectParticles(); requestAnimationFrame(animateParticles); }
+        window.addEventListener('resize', initParticles); initParticles(); animateParticles();
 
-        // --- Translator Logic (Refactored for Serverless API) ---
+        // --- Translator Logic (Refactored for Image Translation) ---
 
-        const API_ENDPOINT = '/api/translate'; // Our secure serverless endpoint
+        const API_ENDPOINT = '/api/translate';
 
         const sourceLangSelect = document.getElementById('sourceLang');
         const targetLangSelect = document.getElementById('targetLang');
@@ -341,31 +260,80 @@
         const copyTargetBtn = document.getElementById('copyTarget');
         const copyFeedback = document.getElementById('copyFeedback');
 
+        // NEW: Image-related elements
+        const sourceCard = document.getElementById('sourceCard');
+        const uploadImageBtn = document.getElementById('uploadImageBtn');
+        const imageUploadInput = document.getElementById('imageUploadInput');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const sourceTextContainer = document.getElementById('sourceTextContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const removeImageBtn = document.getElementById('removeImageBtn');
+
         let detectedSourceLang = '';
         let currentAudioPlayer = null;
+        let uploadedImage = null; // NEW: To store image data
 
-        // A generic function to call our backend proxy
+        // --- NEW: Image Handling Functions ---
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                alert('请上传图片文件。');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                imagePreview.src = dataUrl;
+
+                // Store base64 data and mime type separately
+                const base64String = dataUrl.split(',')[1];
+                uploadedImage = {
+                    mimeType: file.type,
+                    data: base64String
+                };
+
+                // Update UI
+                imagePreviewContainer.classList.remove('hidden');
+                sourceTextContainer.classList.add('hidden');
+                sourceTextarea.disabled = true;
+                sourceTextarea.value = '';
+                updateSourceCharCount();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            uploadedImage = null;
+            imagePreview.src = '';
+            imageUploadInput.value = ''; // Reset file input
+
+            // Update UI
+            imagePreviewContainer.classList.add('hidden');
+            sourceTextContainer.classList.remove('hidden');
+            sourceTextarea.disabled = false;
+        }
+
+        // --- API Call and Translation Logic ---
+
         async function callApiProxy(task, requestBody) {
             const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ task, requestBody }),
             });
-
             if (!response.ok) {
-                const errorData = await response.json();
-                const message = errorData?.error?.message || JSON.stringify(errorData);
-                throw new Error(message);
+                const error = await response.json();
+                throw new Error(error.error?.message || 'API request failed');
             }
             return response.json();
         }
 
         async function performTranslation() {
             const sourceText = sourceTextarea.value.trim();
-            const sourceLang = sourceLangSelect.value;
             const targetLang = targetLangSelect.value;
 
-            if (!sourceText) return;
+            if (!sourceText && !uploadedImage) return;
 
             loadingIndicator.classList.remove('hidden');
             targetDiv.innerText = '';
@@ -373,42 +341,56 @@
             detectedSourceLang = '';
 
             let requestBody;
-            const isAutoDetect = sourceLang === 'auto';
+            const isAutoDetect = sourceLangSelect.value === 'auto';
+            let prompt;
 
-            const prompt = isAutoDetect
-                ? `As an expert linguist, first detect the language of the following text, then translate it into "${targetLang}". Provide the output as a clean JSON object with "detectedLanguage" (e.g., "English") and "translatedText" keys.\n\nText:\n---\n${sourceText}`
-                : `Translate the following text from ${sourceLang} to ${targetLang}. Respond only with the translated text.\n\nText:\n---\n${sourceText}`;
-
-            requestBody = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: isAutoDetect ? {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            "detectedLanguage": { "type": "STRING" },
-                            "translatedText": { "type": "STRING" },
-                        },
-                        required: ["detectedLanguage", "translatedText"]
-                    },
-                } : {
-                    temperature: 0.3,
-                    maxOutputTokens: 2048,
-                },
-            };
+            if (uploadedImage) {
+                // Image translation prompt
+                prompt = `Extract text from the following image and translate it to "${targetLang}".`;
+                if (isAutoDetect) {
+                     prompt += ` First, also identify the source language. Respond in a JSON format with "detectedLanguage" and "translatedText" keys.`;
+                }
+                requestBody = {
+                    prompt: prompt,
+                    image: uploadedImage,
+                    generationConfig: isAutoDetect ? {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }},
+                            required: ["detectedLanguage", "translatedText"]
+                        }
+                    } : {}
+                };
+            } else {
+                // Text translation prompt
+                prompt = isAutoDetect
+                    ? `First detect the language of the following text, then translate it into "${targetLang}". Provide the output as a clean JSON object with "detectedLanguage" and "translatedText" keys.\n\nText:\n---\n${sourceText}`
+                    : `Translate the following text to "${targetLang}". Respond only with the translated text.\n\nText:\n---\n${sourceText}`;
+                requestBody = {
+                    prompt: prompt,
+                    generationConfig: isAutoDetect ? {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                             type: "OBJECT",
+                            properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }},
+                            required: ["detectedLanguage", "translatedText"]
+                        }
+                    } : {
+                        temperature: 0.3, maxOutputTokens: 2048,
+                    }
+                };
+            }
 
             try {
-                // We now pass a "task identifier" string.
                 const data = await callApiProxy('TRANSLATION', requestBody);
 
                 if (isAutoDetect) {
-                    const resultText = data.candidates[0].content.parts[0].text;
-                    const resultJson = JSON.parse(resultText);
+                    const resultJson = JSON.parse(data.candidates[0].content.parts[0].text);
                     targetDiv.innerText = resultJson.translatedText;
                     detectedSourceLang = resultJson.detectedLanguage;
-
-                    const optionToSelect = Array.from(sourceLangSelect.options).find(opt => opt.value === detectedSourceLang);
-                    if (optionToSelect) sourceLangSelect.value = detectedSourceLang;
+                    const option = Array.from(sourceLangSelect.options).find(o => o.value === detectedSourceLang);
+                    if (option) sourceLangSelect.value = detectedSourceLang;
                 } else {
                     targetDiv.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No translation found.";
                 }
@@ -423,30 +405,21 @@
         }
 
         async function speakText(text, lang, buttonElement) {
-            if (!text) return;
-
+             if (!text) return;
             if (currentAudioPlayer && !currentAudioPlayer.paused) {
                 currentAudioPlayer.pause();
-                buttonElement.classList.remove('speaking');
                 currentAudioPlayer = null;
+                buttonElement.classList.remove('speaking');
                 return;
             }
-
-            // The request body now only contains the essential data.
-            const requestBody = {
-                text: text,
-                languageCode: lang
-            };
-
+            const requestBody = { text: text, languageCode: lang };
             const originalIcon = buttonElement.innerHTML;
             buttonElement.innerHTML = '<div class="loading-spinner"></div>';
             buttonElement.disabled = true;
 
             try {
-                // We pass the "TTS" task identifier.
                 const data = await callApiProxy('TTS', requestBody);
                 if (!data.audioContent) throw new Error("API did not return audio data.");
-
                 const audioUrl = `data:audio/mp3;base64,${data.audioContent}`;
                 currentAudioPlayer = new Audio(audioUrl);
                 buttonElement.classList.add('speaking');
@@ -464,63 +437,68 @@
             }
         }
 
+        // --- Helper Functions and Event Listeners ---
         function getLanguageCodeForTTS(langName) {
-            const langMap = {
-                'English': 'en-US', 'Chinese': 'cmn-CN', 'Japanese': 'ja-JP',
-                'Spanish': 'es-ES', 'French': 'fr-FR', 'German': 'de-DE', 'Korean': 'ko-KR'
-            };
+            const langMap = { 'English': 'en-US', 'Chinese': 'cmn-CN', 'Japanese': 'ja-JP', 'Spanish': 'es-ES', 'French': 'fr-FR', 'German': 'de-DE', 'Korean': 'ko-KR' };
             return langMap[langName] || 'en-US';
         }
-
         async function handleSourceSpeak() {
             const text = sourceTextarea.value.trim();
-            if (!text) return;
+            if (!text) return; // Cannot speak image
             const langName = detectedSourceLang || sourceLangSelect.value;
-            if(langName === 'auto') {
-                alert('请先进行一次翻译来自动检测语言。');
-                return;
-            }
+            if (langName === 'auto') { alert('请先进行一次翻译来自动检测语言。'); return; }
             speakText(text, getLanguageCodeForTTS(langName), speakSourceBtn);
         }
-
         function handleTargetSpeak() {
             const text = targetDiv.innerText.trim();
-            const langName = targetLangSelect.value;
             if (!text) return;
-            speakText(text, getLanguageCodeForTTS(langName), speakTargetBtn);
+            speakText(text, getLanguageCodeForTTS(targetLangSelect.value), speakTargetBtn);
         }
-
-        function updateSourceCharCount() {
-            sourceCharCount.innerText = `${sourceTextarea.value.length} / 5000`;
-        }
-        function updateTargetCharCount() {
-            targetCharCount.innerText = `${targetDiv.innerText.length}`;
-        }
-
+        function updateSourceCharCount() { sourceCharCount.innerText = `${sourceTextarea.value.length} / 5000`; }
+        function updateTargetCharCount() { targetCharCount.innerText = `${targetDiv.innerText.length}`; }
         function copyTranslatedText() {
-            const textToCopy = targetDiv.innerText;
-            if (textToCopy) {
-                const textAreaForCopy = document.createElement("textarea");
-                textAreaForCopy.value = textToCopy;
-                document.body.appendChild(textAreaForCopy);
-                textAreaForCopy.select();
-                try {
-                    document.execCommand('copy');
+            const text = targetDiv.innerText;
+            if (text) {
+                navigator.clipboard.writeText(text).then(() => {
                     copyFeedback.classList.remove('opacity-0');
                     setTimeout(() => copyFeedback.classList.add('opacity-0'), 2000);
-                } catch (err) {
-                    alert('复制文本失败。');
-                }
-                document.body.removeChild(textAreaForCopy);
+                }).catch(err => alert('复制失败'));
             }
         }
 
-        // --- Event Listeners ---
+        // --- Event Listeners Setup ---
         translateBtn.addEventListener('click', performTranslation);
         sourceTextarea.addEventListener('input', updateSourceCharCount);
         speakSourceBtn.addEventListener('click', handleSourceSpeak);
         speakTargetBtn.addEventListener('click', handleTargetSpeak);
         copyTargetBtn.addEventListener('click', copyTranslatedText);
+
+        // NEW: Image-related event listeners
+        uploadImageBtn.addEventListener('click', () => imageUploadInput.click());
+        imageUploadInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        removeImageBtn.addEventListener('click', removeImage);
+
+        // NEW: Drag and drop event listeners
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            sourceCard.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            sourceCard.addEventListener(eventName, () => {
+                sourceCard.classList.add('drag-over');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            sourceCard.addEventListener(eventName, () => {
+                sourceCard.classList.remove('drag-over');
+            }, false);
+        });
+        sourceCard.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        }, false);
 
     </script>
 </body>
