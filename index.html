@@ -347,7 +347,6 @@
             DOM.translateBtn.disabled = true;
             detectedSourceLang = '';
 
-            // **FIXED**: Implement client-side timeout to handle long-running requests gracefully
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
                 controller.abort();
@@ -356,12 +355,14 @@
             try {
                 let data;
                 if (uploadedImage) {
-                    const prompt = `Your role is a machine. You follow instructions literally. Analyze the image and the target language provided.
-**Rule 1:** Check if there is any discernible text in the image.
-**Rule 2:** If there IS text, your ONLY output will be the translation of that text into the target language: "${targetLang}". Do NOT add any other words, explanations, or introductory phrases.
-**Rule 3:** If there is NO discernible text in the image, your ONLY output will be the translation of the exact Chinese phrase "图片中没有文字，无法翻译" into the target language: "${targetLang}".
-**Rule 4:** You are forbidden from describing the image content under any circumstances.
-Execute now.`;
+                    // **FIXED**: The ultimate, most robust prompt to prevent model confusion.
+                    const prompt = `You are a professional, literal translation engine. Your task is to process an image following these strict rules:
+1.  First, perform OCR to extract all text from the image.
+2.  Then, identify the source language of the extracted text (e.g., "Japanese", "English").
+3.  Finally, you **MUST** translate the extracted text from its identified source language into the specified target language: **${targetLang}**. This is a mandatory step.
+Your response **MUST ONLY** contain the final, translated text in **${targetLang}**. Do not include the original text, the name of the source language, or any other explanatory words.
+If you find no text in the image, your output **MUST** be the translation of the Chinese phrase "图片中没有文字，无法翻译" into the target language: **${targetLang}**.
+Your task is translation, not conversation. Adhere strictly to these rules. Any deviation is a failure.`;
 
                     data = await callApiProxy('TRANSLATION', { prompt, image: uploadedImage }, controller.signal);
                     DOM.targetText.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || `未能翻译成 ${targetLang}`;
