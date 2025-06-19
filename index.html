@@ -227,7 +227,7 @@
     </div>
 
     <script type="module">
-        // --- Particle Background (No changes) ---
+        // --- Particle Background ---
         const canvas = document.getElementById('particle-canvas');
         const ctx = canvas.getContext('2d');
         let particlesArray = [];
@@ -239,29 +239,28 @@
         window.addEventListener('resize', initParticles); initParticles(); animateParticles();
 
         // --- Translator Logic ---
-
         const API_ENDPOINT = '/api/translate';
-
-        const sourceLangSelect = document.getElementById('sourceLang');
-        const targetLangSelect = document.getElementById('targetLang');
-        const sourceTextarea = document.getElementById('sourceText');
-        const targetDiv = document.getElementById('targetText');
-        const translateBtn = document.getElementById('translateBtn');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const sourceCharCount = document.getElementById('sourceCharCount');
-        const targetCharCount = document.getElementById('targetCharCount');
-        const speakSourceBtn = document.getElementById('speakSource');
-        const speakTargetBtn = document.getElementById('speakTarget');
-        const copyTargetBtn = document.getElementById('copyTarget');
-        const copyFeedback = document.getElementById('copyFeedback');
-
-        const sourceCard = document.getElementById('sourceCard');
-        const uploadImageBtn = document.getElementById('uploadImageBtn');
-        const imageUploadInput = document.getElementById('imageUploadInput');
-        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-        const sourceTextContainer = document.getElementById('sourceTextContainer');
-        const imagePreview = document.getElementById('imagePreview');
-        const removeImageBtn = document.getElementById('removeImageBtn');
+        const DOM = {
+            sourceLang: document.getElementById('sourceLang'),
+            targetLang: document.getElementById('targetLang'),
+            sourceText: document.getElementById('sourceText'),
+            targetText: document.getElementById('targetText'),
+            translateBtn: document.getElementById('translateBtn'),
+            loadingIndicator: document.getElementById('loadingIndicator'),
+            sourceCharCount: document.getElementById('sourceCharCount'),
+            targetCharCount: document.getElementById('targetCharCount'),
+            speakSourceBtn: document.getElementById('speakSource'),
+            speakTargetBtn: document.getElementById('speakTarget'),
+            copyTargetBtn: document.getElementById('copyTarget'),
+            copyFeedback: document.getElementById('copyFeedback'),
+            sourceCard: document.getElementById('sourceCard'),
+            uploadImageBtn: document.getElementById('uploadImageBtn'),
+            imageUploadInput: document.getElementById('imageUploadInput'),
+            imagePreviewContainer: document.getElementById('imagePreviewContainer'),
+            sourceTextContainer: document.getElementById('sourceTextContainer'),
+            imagePreview: document.getElementById('imagePreview'),
+            removeImageBtn: document.getElementById('removeImageBtn'),
+        };
 
         let detectedSourceLang = '';
         let currentAudioPlayer = null;
@@ -272,18 +271,16 @@
                 alert('请上传图片文件。');
                 return;
             }
-
             const reader = new FileReader();
             reader.onload = (e) => {
                 const dataUrl = e.target.result;
-                imagePreview.src = dataUrl;
+                DOM.imagePreview.src = dataUrl;
                 const base64String = dataUrl.split(',')[1];
                 uploadedImage = { mimeType: file.type, data: base64String };
-
-                imagePreviewContainer.classList.remove('hidden');
-                sourceTextContainer.classList.add('hidden');
-                sourceTextarea.disabled = true;
-                sourceTextarea.value = '';
+                DOM.imagePreviewContainer.classList.remove('hidden');
+                DOM.sourceTextContainer.classList.add('hidden');
+                DOM.sourceText.disabled = true;
+                DOM.sourceText.value = '';
                 updateSourceCharCount();
             };
             reader.readAsDataURL(file);
@@ -291,12 +288,11 @@
 
         function removeImage() {
             uploadedImage = null;
-            imagePreview.src = '';
-            imageUploadInput.value = '';
-
-            imagePreviewContainer.classList.add('hidden');
-            sourceTextContainer.classList.remove('hidden');
-            sourceTextarea.disabled = false;
+            DOM.imagePreview.src = '';
+            DOM.imageUploadInput.value = '';
+            DOM.imagePreviewContainer.classList.add('hidden');
+            DOM.sourceTextContainer.classList.remove('hidden');
+            DOM.sourceText.disabled = false;
         }
 
         async function callApiProxy(task, requestBody) {
@@ -305,76 +301,71 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ task, requestBody }),
             });
+            const data = await response.json();
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error?.message || 'API request failed');
+                throw new Error(data.error?.message || 'API request failed');
             }
-            return response.json();
+            return data;
         }
 
         async function performTranslation() {
-            const sourceText = sourceTextarea.value.trim();
-            const targetLang = targetLangSelect.value;
+            const sourceText = DOM.sourceText.value.trim();
+            const targetLang = DOM.targetLang.value;
 
             if (!sourceText && !uploadedImage) return;
 
-            loadingIndicator.classList.remove('hidden');
-            targetDiv.innerText = '';
-            translateBtn.disabled = true;
+            DOM.loadingIndicator.classList.remove('hidden');
+            DOM.targetText.innerText = '';
+            DOM.translateBtn.disabled = true;
             detectedSourceLang = '';
 
-            let requestBody;
-            const isAutoDetect = sourceLangSelect.value === 'auto';
-
             try {
+                let data;
                 if (uploadedImage) {
-                    // **FIXED**: Using a much stricter prompt for image translation.
                     const prompt = `You are a strict OCR and translation tool. Your sole task is to extract any text from the provided image and translate it to "${targetLang}". VERY IMPORTANT: Your response MUST contain ONLY the translated text. Do not include any explanations, introductions, or any words other than the translation itself. If no text is found in the image, you must return a completely empty response.`;
-                    requestBody = { prompt, image: uploadedImage };
-
-                    const data = await callApiProxy('TRANSLATION', requestBody);
-                    targetDiv.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text || ""; // Return empty string if no text
-                    if(isAutoDetect) sourceLangSelect.value = 'auto';
-
+                    data = await callApiProxy('TRANSLATION', { prompt, image: uploadedImage });
+                    DOM.targetText.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "";
+                    if (DOM.sourceLang.value === 'auto') DOM.sourceLang.value = 'auto';
                 } else {
+                    const isAutoDetect = DOM.sourceLang.value === 'auto';
                     const prompt = isAutoDetect
-                        ? `First detect the language of the following text, then translate it into "${targetLang}". Provide the output as a clean JSON object with "detectedLanguage" and "translatedText" keys.\n\nText:\n---\n${sourceText}`
-                        : `Translate the following text to "${targetLang}". Respond only with the translated text.\n\nText:\n---\n${sourceText}`;
-                    requestBody = {
+                        ? `Your task is to strictly act as a language detector and translator. Analyze the following text, identify its source language, and translate it to "${targetLang}". Your response MUST be a valid JSON object, and nothing else. The JSON object must contain these two keys: "detectedLanguage" (e.g., "English") and "translatedText".\n\nText:\n---\n${sourceText}`
+                        : `Translate the following text to "${targetLang}". Respond only with the translated text itself, without any extra words or explanations.\n\nText:\n---\n${sourceText}`;
+                    const requestBody = {
                         prompt,
                         generationConfig: isAutoDetect ? {
                             responseMimeType: "application/json",
-                            responseSchema: {
-                                type: "OBJECT",
-                                properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }},
-                                required: ["detectedLanguage", "translatedText"]
-                            }
+                            responseSchema: { type: "OBJECT", properties: {"detectedLanguage": { "type": "STRING" },"translatedText": { "type": "STRING" }}, required: ["detectedLanguage", "translatedText"] }
                         } : { temperature: 0.3, maxOutputTokens: 2048 }
                     };
-
-                    const data = await callApiProxy('TRANSLATION', requestBody);
+                    data = await callApiProxy('TRANSLATION', requestBody);
                     if (isAutoDetect) {
-                        const resultJson = JSON.parse(data.candidates[0].content.parts[0].text);
-                        targetDiv.innerText = resultJson.translatedText;
-                        detectedSourceLang = resultJson.detectedLanguage;
-                        const option = Array.from(sourceLangSelect.options).find(o => o.value === detectedSourceLang);
-                        if (option) sourceLangSelect.value = detectedSourceLang;
+                        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        try {
+                           const resultJson = JSON.parse(resultText);
+                           DOM.targetText.innerText = resultJson.translatedText;
+                           detectedSourceLang = resultJson.detectedLanguage;
+                           const option = Array.from(DOM.sourceLang.options).find(o => o.value === detectedSourceLang);
+                           if (option) DOM.sourceLang.value = detectedSourceLang;
+                        } catch (e) {
+                           throw new Error("模型返回了无效的格式。");
+                        }
                     } else {
-                        targetDiv.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No translation found.";
+                        DOM.targetText.innerText = data.candidates?.[0]?.content?.parts?.[0]?.text || "未找到翻译结果。";
                     }
                 }
             } catch (error) {
                 console.error('翻译错误:', error);
-                targetDiv.innerText = `翻译时发生错误: ${error.message}`;
+                DOM.targetText.innerText = `翻译时发生错误: ${error.message}`;
             } finally {
-                loadingIndicator.classList.add('hidden');
-                translateBtn.disabled = false;
+                DOM.loadingIndicator.classList.add('hidden');
+                DOM.translateBtn.disabled = false;
                 updateTargetCharCount();
             }
         }
 
         async function speakText(text, lang, buttonElement) {
-             if (!text) return;
+            if (!text) return;
             if (currentAudioPlayer && !currentAudioPlayer.paused) {
                 currentAudioPlayer.pause();
                 currentAudioPlayer = null;
@@ -385,7 +376,6 @@
             const originalIcon = buttonElement.innerHTML;
             buttonElement.innerHTML = '<div class="loading-spinner"></div>';
             buttonElement.disabled = true;
-
             try {
                 const data = await callApiProxy('TTS', requestBody);
                 if (!data.audioContent) throw new Error("API did not return audio data.");
@@ -410,54 +400,52 @@
             const langMap = { 'English': 'en-US', 'Chinese': 'cmn-CN', 'Japanese': 'ja-JP', 'Spanish': 'es-ES', 'French': 'fr-FR', 'German': 'de-DE', 'Korean': 'ko-KR' };
             return langMap[langName] || 'en-US';
         }
-        async function handleSourceSpeak() {
-            const text = sourceTextarea.value.trim();
+        function handleSourceSpeak() {
+            const text = DOM.sourceText.value.trim();
             if (!text) return;
-            const langName = detectedSourceLang || sourceLangSelect.value;
+            const langName = detectedSourceLang || DOM.sourceLang.value;
             if (langName === 'auto') { alert('请先进行一次翻译来自动检测语言。'); return; }
-            speakText(text, getLanguageCodeForTTS(langName), speakSourceBtn);
+            speakText(text, getLanguageCodeForTTS(langName), DOM.speakSourceBtn);
         }
         function handleTargetSpeak() {
-            const text = targetDiv.innerText.trim();
+            const text = DOM.targetText.innerText.trim();
             if (!text) return;
-            speakText(text, getLanguageCodeForTTS(targetLangSelect.value), speakTargetBtn);
+            speakText(text, getLanguageCodeForTTS(DOM.targetLang.value), DOM.speakTargetBtn);
         }
-        function updateSourceCharCount() { sourceCharCount.innerText = `${sourceTextarea.value.length} / 5000`; }
-        function updateTargetCharCount() { targetCharCount.innerText = `${targetDiv.innerText.length}`; }
+        function updateSourceCharCount() { DOM.sourceCharCount.innerText = `${DOM.sourceText.value.length} / 5000`; }
+        function updateTargetCharCount() { DOM.targetCharCount.innerText = `${DOM.targetText.innerText.length}`; }
         function copyTranslatedText() {
-            const text = targetDiv.innerText;
+            const text = DOM.targetText.innerText;
             if (text) {
                 navigator.clipboard.writeText(text).then(() => {
-                    copyFeedback.classList.remove('opacity-0');
-                    setTimeout(() => copyFeedback.classList.add('opacity-0'), 2000);
+                    DOM.copyFeedback.classList.remove('opacity-0');
+                    setTimeout(() => DOM.copyFeedback.classList.add('opacity-0'), 2000);
                 }).catch(err => alert('复制失败'));
             }
         }
 
-        translateBtn.addEventListener('click', performTranslation);
-        sourceTextarea.addEventListener('input', updateSourceCharCount);
-        speakSourceBtn.addEventListener('click', handleSourceSpeak);
-        speakTargetBtn.addEventListener('click', handleTargetSpeak);
-        copyTargetBtn.addEventListener('click', copyTranslatedText);
-
-        uploadImageBtn.addEventListener('click', () => imageUploadInput.click());
-        imageUploadInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-        removeImageBtn.addEventListener('click', removeImage);
+        DOM.translateBtn.addEventListener('click', performTranslation);
+        DOM.sourceText.addEventListener('input', updateSourceCharCount);
+        DOM.speakSourceBtn.addEventListener('click', handleSourceSpeak);
+        DOM.speakTargetBtn.addEventListener('click', handleTargetSpeak);
+        DOM.copyTargetBtn.addEventListener('click', copyTranslatedText);
+        DOM.uploadImageBtn.addEventListener('click', () => DOM.imageUploadInput.click());
+        DOM.imageUploadInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        DOM.removeImageBtn.addEventListener('click', removeImage);
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            sourceCard.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            DOM.sourceCard.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
         });
         ['dragenter', 'dragover'].forEach(eventName => {
-            sourceCard.addEventListener(eventName, () => sourceCard.classList.add('drag-over'), false);
+            DOM.sourceCard.addEventListener(eventName, () => DOM.sourceCard.classList.add('drag-over'), false);
         });
         ['dragleave', 'drop'].forEach(eventName => {
-            sourceCard.addEventListener(eventName, () => sourceCard.classList.remove('drag-over'), false);
+            DOM.sourceCard.addEventListener(eventName, () => DOM.sourceCard.classList.remove('drag-over'), false);
         });
-        sourceCard.addEventListener('drop', (e) => {
+        DOM.sourceCard.addEventListener('drop', (e) => {
             const file = e.dataTransfer.files[0];
             handleFile(file);
         }, false);
-
     </script>
 </body>
 </html>

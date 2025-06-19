@@ -32,10 +32,7 @@ export default async function handler(request, response) {
 
   switch (task) {
     case 'TRANSLATION':
-      // Use the model name from environment variables
       googleApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${translationModel}:generateContent?key=${apiKey}`;
-
-      // NEW: Build the request body for Gemini, checking if an image is present
       const parts = [{ text: requestBody.prompt }];
       if (requestBody.image) {
         parts.push({
@@ -45,7 +42,6 @@ export default async function handler(request, response) {
           }
         });
       }
-
       finalRequestBody = {
         contents: [{ parts }],
         generationConfig: requestBody.generationConfig || {}
@@ -77,13 +73,26 @@ export default async function handler(request, response) {
     });
 
     const data = await googleResponse.json();
+
+    // **FIXED**: More robust error handling for the Google API response
     if (!googleResponse.ok) {
-        throw new Error(data.error?.message || 'Google API Error');
+        console.error('Google API Error:', data);
+        // Forward the specific error message from Google if available
+        throw new Error(data.error?.message || 'Google API returned an error');
     }
+
+    // Add a check to ensure the response for translation has the expected structure
+    if (task === 'TRANSLATION' && (!data.candidates || data.candidates.length === 0)) {
+        // This handles cases where the model returns an empty or unexpected response (e.g., for safety reasons)
+        console.warn('Google API returned no candidates. Response:', data);
+        // We can create a "successful" empty candidate to prevent frontend errors
+        return response.status(200).json({ candidates: [{ content: { parts: [{ text: "" }] } }] });
+    }
+
     return response.status(200).json(data);
 
   } catch (error) {
-    console.error('Proxy Internal Error:', error);
-    return response.status(500).json({ error: { message: 'An internal server error occurred.' }});
+    console.error('Proxy Internal Error:', error.toString());
+    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' }});
   }
 }
